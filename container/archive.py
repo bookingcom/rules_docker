@@ -191,9 +191,7 @@ class TarFileWriter(object):
       # Remove trailing '/' (index -1 => last character)
       if name[-1] == '/':
         name = name[:-1]
-      # Add the x bit to directories to prevent non-traversable directories.
-      # The x bit is set only to if the read bit is set.
-      dirmode = (mode | ((0o444 & mode) >> 2)) if mode else mode
+      dirmode = get_dirmode(mode)
       self.add_file(name + '/',
                     tarfile.DIRTYPE,
                     uid=uid,
@@ -287,7 +285,7 @@ class TarFileWriter(object):
                     uname=uname,
                     gname=gname,
                     mtime=mtime,
-                    mode=0o755)
+                    mode=get_dirmode(mode))
     tarinfo = tarfile.TarInfo(name)
     tarinfo.mtime = mtime
     tarinfo.uid = uid
@@ -446,3 +444,15 @@ class TarFileWriter(object):
           'mv {0} {0}.d && xz -z {0}.d && mv {0}.d.xz {0}'.format(self.name),
           shell=True,
           stdout=subprocess.PIPE)
+
+
+def get_dirmode(mode):
+  """Compute directory from a file mode
+
+  Adds the x bit to directories to prevent non-traversable directories.
+  The x bit is set only to if the read bit is set.
+
+  Args:
+    mode: file mode
+  """
+  return (mode | ((0o444 & mode) >> 2)) if mode else mode
